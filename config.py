@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MODEL = "claude-sonnet-4-6"
+BASE_URL = os.environ.get("ANTHROPIC_BASE_URL") or None
+MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 MAX_TOKENS = 1024
 
 SYSTEM_PROMPT = (
@@ -15,6 +16,8 @@ SYSTEM_PROMPT = (
 
 def api_key() -> str:
     key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if BASE_URL:
+        return key or "ollama"
     if not key or key == "your_key_here":
         raise RuntimeError(
             "ANTHROPIC_API_KEY is not set. Paste your key into .env "

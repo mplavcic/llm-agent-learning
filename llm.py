@@ -1,7 +1,7 @@
 import anthropic
 from anthropic.types import Message
 
-from config import MAX_TOKENS, MODEL, api_key
+from config import BASE_URL, MAX_TOKENS, MODEL, api_key
 
 _client: anthropic.Anthropic | None = None
 
@@ -9,7 +9,10 @@ _client: anthropic.Anthropic | None = None
 def client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=api_key())
+        kwargs: dict = {"api_key": api_key()}
+        if BASE_URL:
+            kwargs["base_url"] = BASE_URL
+        _client = anthropic.Anthropic(**kwargs)
     return _client
 
 
