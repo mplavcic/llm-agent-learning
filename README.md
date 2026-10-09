@@ -2,8 +2,6 @@
 
 An experimental lab and tutorial codebase exploring core LLM agent architectures, memory systems, and tool use.
 
-We follow the series *LLM Agents, The Way Nobody Told You* and build a customer support agent from scratch — no framework, just the Anthropic SDK and Python.
-
 ## Setup
 
 ```bash
