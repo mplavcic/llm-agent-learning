@@ -17,12 +17,14 @@ def client() -> anthropic.Anthropic:
 
 
 def ask(
-    messages: list[dict[str, str]],
+    messages: list[dict],
     *,
     system: str | None = None,
     temperature: float | None = None,
     max_tokens: int = MAX_TOKENS,
     model: str = MODEL,
+    tools: list[dict] | None = None,
+    tool_choice: dict | None = None,
 ) -> Message:
     kwargs: dict = {
         "model": model,
@@ -35,8 +37,20 @@ def ask(
         kwargs["extra_body"] = {"temperature": temperature}
     if system is not None:
         kwargs["system"] = system
+    if tools is not None:
+        kwargs["tools"] = tools
+    if tool_choice is not None:
+        kwargs["tool_choice"] = tool_choice
     return client().messages.create(**kwargs)
 
 
 def text(response: Message) -> str:
     return "".join(block.text for block in response.content if block.type == "text")
+
+
+def tool_uses(response: Message) -> list:
+    return [
+        block
+        for block in response.content
+        if getattr(block, "type", None) == "tool_use"
+    ]
