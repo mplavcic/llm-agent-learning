@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass
 from typing import Callable
 
+from knowledge import search_kb
 from users import get_purchases, lookup_user
 
 
@@ -74,6 +75,27 @@ TOOL_SPECS = [
         ),
         input_schema={"type": "object", "properties": {}},
         function=_today,
+    ),
+    Tool(
+        name="search_kb",
+        description=(
+            "Search the knowledge base for policies and help articles. Pass a "
+            "short query such as 'refund policy' or 'cancellation'. Returns "
+            '{"results": [...]} where each result has a title and text; if '
+            'nothing matches it returns {"results": []}. Always search before '
+            "stating a policy or rule so your answer uses the current text."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Keywords to search for, e.g. 'refund policy'.",
+                }
+            },
+            "required": ["query"],
+        },
+        function=search_kb,
     ),
 ]
 

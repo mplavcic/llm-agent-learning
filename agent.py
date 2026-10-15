@@ -1,5 +1,5 @@
 import llm
-from config import MAX_TOKENS, MODEL
+from config import MAX_TOKENS, MODEL, SUPPORT_SYSTEM_PROMPT
 from tools import TOOL_SCHEMAS, execute_tool
 
 MAX_ITERATIONS = 10
@@ -10,7 +10,7 @@ class Agent:
 
     def __init__(
         self,
-        system: str,
+        system: str = SUPPORT_SYSTEM_PROMPT,
         *,
         tools: list[dict] = TOOL_SCHEMAS,
         model: str = MODEL,

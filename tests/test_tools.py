@@ -25,6 +25,17 @@ class TestExecuteTool:
         assert not is_error
         assert "today" in json.loads(content)
 
+    def test_search_kb_is_not_an_error_and_returns_results(self):
+        content, is_error = execute_tool("search_kb", {"query": "refund policy"})
+        assert not is_error
+        results = json.loads(content)["results"]
+        assert results[0]["id"] == "refund_policy"
+
+    def test_search_kb_empty_result_is_not_an_error(self):
+        content, is_error = execute_tool("search_kb", {"query": "zzzz"})
+        assert not is_error
+        assert json.loads(content) == {"results": []}
+
     def test_unknown_tool_is_error(self):
         content, is_error = execute_tool("nope", {})
         assert is_error

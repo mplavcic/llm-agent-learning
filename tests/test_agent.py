@@ -4,6 +4,7 @@ from unittest.mock import patch
 import pytest
 
 from agent import Agent
+from config import SUPPORT_SYSTEM_PROMPT
 
 
 def _text_block(text):
@@ -46,6 +47,9 @@ SYSTEM = "You are a customer support agent."
 
 
 class TestAgentLoop:
+    def test_defaults_to_shared_support_prompt(self):
+        assert Agent().system == SUPPORT_SYSTEM_PROMPT
+
     def test_end_turn_returns_text(self):
         fake_create, _ = make_fake_client([{"stop_reason": "end_turn", "text": "hi"}])
         agent = Agent(SYSTEM)

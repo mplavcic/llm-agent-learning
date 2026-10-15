@@ -5,12 +5,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_URL = os.environ.get("ANTHROPIC_BASE_URL") or None
+IS_LOCAL = BASE_URL is not None
 MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 MAX_TOKENS = 1024
 
 SYSTEM_PROMPT = (
     "You are a helpful customer support agent. You are polite, concise, "
     "and always try to resolve the user's issue."
+)
+
+SUPPORT_SYSTEM_PROMPT = (
+    "You are a customer support agent for a study abroad platform. You handle "
+    "refund requests, technical issues, billing questions, and counsellor "
+    "complaints. Always look up the relevant policy and the user's own data "
+    "before giving a definitive answer. Be concise and empathetic, and never "
+    "make promises you cannot keep."
 )
 
 
