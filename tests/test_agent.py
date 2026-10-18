@@ -32,7 +32,8 @@ def make_fake_client(specs):
     captured = []
 
     def fake_create(**kwargs):
-        captured.append(kwargs["messages"])
+        # Snapshot the list: callers pass a live reference they keep mutating.
+        captured.append(list(kwargs["messages"]))
         step = specs.pop(0)
         return make_response(
             stop_reason=step.get("stop_reason", "end_turn"),

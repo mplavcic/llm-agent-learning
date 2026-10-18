@@ -6,7 +6,12 @@ MAX_ITERATIONS = 10
 
 
 class Agent:
-    """A stateless agent: one chat() call runs one fresh conversation."""
+    """A stateless agent: the loop runs over a messages list it is handed.
+
+    State lives elsewhere (see Conversation). The loop mutates the list in
+    place so the caller keeps the full history — tool_use and tool_result
+    blocks included.
+    """
 
     def __init__(
         self,
@@ -24,7 +29,12 @@ class Agent:
         self.temperature = temperature
 
     def chat(self, user_message: str) -> str:
+        """One-shot convenience: fresh list, single turn, no memory."""
         messages = [{"role": "user", "content": user_message}]
+        return self.run(messages)
+
+    def run(self, messages: list[dict]) -> str:
+        """Run the agent loop over `messages`, appending as it goes."""
         for _ in range(MAX_ITERATIONS):
             response = llm.ask(
                 messages,
