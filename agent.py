@@ -1,3 +1,5 @@
+from typing import Callable
+
 import llm
 from config import MAX_TOKENS, MODEL, SUPPORT_SYSTEM_PROMPT
 from tools import TOOL_SCHEMAS, execute_tool
@@ -21,12 +23,16 @@ class Agent:
         model: str = MODEL,
         max_tokens: int = MAX_TOKENS,
         temperature: float | None = 0,
+        execute: Callable[[str, dict], tuple[str, bool]] | None = None,
     ):
         self.system = system
         self.tools = tools
         self.model = model
         self.max_tokens = max_tokens
         self.temperature = temperature
+        # The executor is a seam: pass a scoped or dispatching callable to
+        # route tool_use blocks somewhere other than the global tool table.
+        self.execute = execute if execute is not None else execute_tool
 
     def chat(self, user_message: str) -> str:
         """One-shot convenience: fresh list, single turn, no memory."""
@@ -50,7 +56,7 @@ class Agent:
                 messages.append({"role": "assistant", "content": response.content})
                 results = []
                 for block in llm.tool_uses(response):
-                    content, is_error = execute_tool(block.name, block.input)
+                    content, is_error = self.execute(block.name, block.input)
                     results.append(
                         {
                             "type": "tool_result",

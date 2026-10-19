@@ -99,16 +99,21 @@ TOOL_SPECS = [
     ),
 ]
 
-TOOL_SCHEMAS = [
-    {
+def to_schema(spec: Tool) -> dict:
+    return {
         "name": spec.name,
         "description": spec.description,
         "input_schema": spec.input_schema,
     }
-    for spec in TOOL_SPECS
-]
+
+
+TOOL_SCHEMAS = [to_schema(spec) for spec in TOOL_SPECS]
 
 _BY_NAME = {spec.name: spec for spec in TOOL_SPECS}
+
+
+def get_tool(name: str) -> Tool:
+    return _BY_NAME[name]
 
 
 def execute_tool(name: str, args: dict) -> tuple[str, bool]:
