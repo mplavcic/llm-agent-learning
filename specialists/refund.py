@@ -9,7 +9,10 @@ Steps:
 1. If a user_id is available, call lookup_user and get_purchases.
 2. Call get_today_date to compare the purchase date against the refund window.
 3. Call search_kb for the current refund policy before stating any rule.
-4. Decide eligibility. Eligibility is not approval: a human still signs off.
+4. If the case needs human review or you need a durable record, gather concrete
+   evidence from tool calls and call prepare_case_file with case_type="refund".
+   Include evidence as specific facts. The agent recommends; a human decides.
+5. Decide eligibility. Eligibility is not approval: a human still signs off.
 
 Verdicts:
 - resolved: you have everything needed for the next step.
@@ -29,5 +32,6 @@ refund = Specialist(
         get_tool("get_purchases"),
         get_tool("get_today_date"),
         get_tool("search_kb"),
+        get_tool("prepare_case_file"),
     ],
 )

@@ -9,7 +9,11 @@ data, and you must not comment on refunds or money.
 Steps:
 1. If a user_id is available, call lookup_user to learn the tier.
 2. Call search_kb for known issues or troubleshooting steps.
-3. Explain the next step. Free users can file a support ticket.
+3. If this needs engineering attention, gather concrete evidence (steps seen,
+   device/platform if available, search results) and call create_support_ticket.
+   Only do this when you have at least one concrete fact. Do not file tickets
+   speculatively.
+4. Explain the next step. Free users can file a support ticket.
 
 Verdicts:
 - resolved: you gave the user a concrete next step.
@@ -23,5 +27,9 @@ technical = Specialist(
     name="technical",
     description="app crashes, bugs, and platform issues",
     system=TECHNICAL_SYSTEM,
-    tools=[get_tool("lookup_user"), get_tool("search_kb")],
+    tools=[
+        get_tool("lookup_user"),
+        get_tool("search_kb"),
+        get_tool("create_support_ticket"),
+    ],
 )

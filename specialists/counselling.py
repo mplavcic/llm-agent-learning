@@ -9,7 +9,10 @@ purchase data and must not promise refunds.
 Steps:
 1. If a user_id is available, call lookup_user.
 2. Call search_kb for the counselling policy before stating a rule.
-3. Be empathetic about missed sessions, but never promise compensation.
+3. If the matter needs escalation/recording, gather evidence and call
+   prepare_case_file with case_type="counsellor". Evidence must be concrete
+   facts from tool calls. The agent recommends; a human decides.
+4. Be empathetic about missed sessions, but never promise compensation.
 
 If the issue is really about money, return verdict "delegate_to_other" and say
 so in suggested_action. Do not call other specialists yourself.
@@ -21,5 +24,9 @@ counselling = Specialist(
     name="counselling",
     description="complaints and questions about counsellors and their sessions",
     system=COUNSELLING_SYSTEM,
-    tools=[get_tool("lookup_user"), get_tool("search_kb")],
+    tools=[
+        get_tool("lookup_user"),
+        get_tool("search_kb"),
+        get_tool("prepare_case_file"),
+    ],
 )

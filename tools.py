@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass
 from typing import Callable
 
+from artifacts import ArtifactError, CaseFileStore, TicketStore
 from knowledge import search_kb
 from users import get_purchases, lookup_user
 
@@ -21,6 +22,63 @@ class Tool:
 
 def _today() -> dict:
     return {"today": datetime.date.today().isoformat()}
+
+
+def _prepare_case_file(
+    case_type: str,
+    summary: str,
+    evidence: list[str],
+    recommendation: str,
+    user_id: str,
+) -> dict:
+    try:
+        record = CaseFileStore().create(
+            case_type=case_type,
+            summary=summary,
+            evidence=evidence,
+            recommendation=recommendation,
+            user_id=user_id,
+        )
+    except ArtifactError as exc:
+        return {"error": str(exc)}
+    return {
+        "case_id": record.case_id,
+        "case_type": record.case_type,
+        "created_at": record.created_at,
+        "user_id": record.user_id,
+        "status": "created",
+        "message": "Case file created for human review. Recommendation is not a decision.",
+    }
+
+
+def _create_support_ticket(
+    issue_type: str,
+    severity: str,
+    description: str,
+    steps_to_reproduce: list[str],
+    evidence: list[str],
+    user_id: str,
+) -> dict:
+    try:
+        record = TicketStore().create(
+            issue_type=issue_type,
+            severity=severity,
+            description=description,
+            steps_to_reproduce=steps_to_reproduce,
+            evidence=evidence,
+            user_id=user_id,
+        )
+    except ArtifactError as exc:
+        return {"error": str(exc)}
+    return {
+        "ticket_id": record.ticket_id,
+        "issue_type": record.issue_type,
+        "severity": record.severity,
+        "status": record.status,
+        "created_at": record.created_at,
+        "user_id": record.user_id,
+        "message": "Support ticket created for engineering triage.",
+    }
 
 
 TOOL_SPECS = [
@@ -96,6 +154,104 @@ TOOL_SPECS = [
             "required": ["query"],
         },
         function=search_kb,
+    ),
+    Tool(
+        name="prepare_case_file",
+        description=(
+            "Create an immutable, append-only case file for human review. The "
+            "agent recommends; a human decides. The evidence array MUST contain "
+            "at least one concrete fact extracted from a tool call. Do not call "
+            "this speculatively — gather evidence first with lookup_user, "
+            "get_purchases, get_today_date, or search_kb. Writes are persistent "
+            "and recorded in the audit log."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "case_type": {
+                    "type": "string",
+                    "enum": ["refund", "counsellor", "cancellation"],
+                    "description": "The type of case.",
+                },
+                "summary": {
+                    "type": "string",
+                    "description": "A concise summary of the situation.",
+                },
+                "evidence": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Concrete facts extracted from tool calls.",
+                },
+                "recommendation": {
+                    "type": "string",
+                    "description": "Your suggestion for a human to act on (not a decision).",
+                },
+                "user_id": {
+                    "type": "string",
+                    "description": "The user this case file is for.",
+                },
+            },
+            "required": [
+                "case_type",
+                "summary",
+                "evidence",
+                "recommendation",
+                "user_id",
+            ],
+        },
+        function=_prepare_case_file,
+    ),
+    Tool(
+        name="create_support_ticket",
+        description=(
+            "Create an immutable, append-only support ticket for engineering "
+            "triage. Requires concrete evidence. Only use for confirmed or "
+            "strongly suspected bugs/crashes after collecting evidence with "
+            "lookup_user or search_kb. Do not use this for refunds or money. "
+            "Writes are persistent and recorded in the audit log."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "issue_type": {
+                    "type": "string",
+                    "enum": ["crash", "bug", "platform_issue"],
+                    "description": "The kind of technical issue.",
+                },
+                "severity": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"],
+                    "description": "Your best assessment of severity.",
+                },
+                "description": {
+                    "type": "string",
+                    "description": "What the user is seeing.",
+                },
+                "steps_to_reproduce": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Repro steps gathered or inferred.",
+                },
+                "evidence": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Concrete facts extracted from tool calls.",
+                },
+                "user_id": {
+                    "type": "string",
+                    "description": "The user reporting the issue.",
+                },
+            },
+            "required": [
+                "issue_type",
+                "severity",
+                "description",
+                "steps_to_reproduce",
+                "evidence",
+                "user_id",
+            ],
+        },
+        function=_create_support_ticket,
     ),
 ]
 

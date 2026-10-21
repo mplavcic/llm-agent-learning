@@ -11,6 +11,9 @@ Steps:
    registration_date.
 2. Call get_purchases if the request involves their current plan.
 3. Call search_kb for lifecycle and subscription policies.
+4. If a cancellation needs review/recording, call prepare_case_file with
+   case_type="cancellation", include evidence from tool calls. The agent
+   recommends; a human decides.
 
 Verdicts:
 - resolved: you told the user how to proceed.
@@ -28,5 +31,6 @@ lifecycle = Specialist(
         get_tool("lookup_user"),
         get_tool("get_purchases"),
         get_tool("search_kb"),
+        get_tool("prepare_case_file"),
     ],
 )
