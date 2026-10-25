@@ -4,6 +4,7 @@ from typing import Callable, Literal
 
 import llm
 from config import MAX_TOKENS, MODEL
+from hooks import HookContext, HookRegistry, hooked
 from pydantic import BaseModel, ValidationError
 from tools import Tool, execute_tool, to_schema
 
@@ -128,11 +129,22 @@ class Specialist:
     def tool_schemas(self) -> list[dict]:
         return [to_schema(spec) for spec in self.tools] + [SUBMIT_RESULT_SCHEMA]
 
-    def run(self, query: str, user_id: str | None = None) -> SpecialistResult:
+    def run(
+        self,
+        query: str,
+        user_id: str | None = None,
+        *,
+        hooks: HookRegistry | None = None,
+        context: HookContext | None = None,
+    ) -> SpecialistResult:
         content = f"[user_id: {user_id}]\n\n{query}" if user_id else query
         messages = [{"role": "user", "content": content}]
         tools = self.tool_schemas()
         execute = execute_with(self.tools)
+        if hooks is not None and context is not None:
+            # The same hook layer that guards the orchestrator guards every
+            # specialist's inner reads and writes — one uniform tool surface.
+            execute = hooked(execute, hooks, context)
 
         for _ in range(MAX_ITERATIONS):
             response = llm.ask(

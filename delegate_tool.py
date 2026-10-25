@@ -2,6 +2,7 @@ import json
 from typing import Callable
 
 from base_specialist import SpecialistResult
+from hooks import HookContext, HookRegistry
 from specialists import REGISTRY
 
 DELEGATE_TOOL_NAME = "delegate_to_specialist"
@@ -36,6 +37,8 @@ def make_dispatcher(
     *,
     on_result: Callable[[SpecialistResult], None] | None = None,
     registry: dict | None = None,
+    hooks: HookRegistry | None = None,
+    context: HookContext | None = None,
 ) -> Callable[[str, dict], tuple[str, bool]]:
     """Bind the delegate tool to one session's user_id.
 
@@ -57,7 +60,9 @@ def make_dispatcher(
                 "valid": sorted(active),
             }
             return json.dumps(error), True
-        result = specialist.run(args.get("query", ""), user_id)
+        result = specialist.run(
+            args.get("query", ""), user_id, hooks=hooks, context=context
+        )
         if on_result is not None:
             on_result(result)
         return json.dumps(result.model_dump()), False

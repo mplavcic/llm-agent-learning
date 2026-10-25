@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
-CASE_FILES_PATH = Path("case_files.jsonl")
-TICKETS_PATH = Path("tickets.jsonl")
+CASE_FILES_PATH = Path("data/case_files.jsonl")
+TICKETS_PATH = Path("data/tickets.jsonl")
 
 CaseType = Literal["refund", "counsellor", "cancellation"]
 TicketStatus = Literal["open", "triaged"]
@@ -80,8 +80,8 @@ class Ticket:
 class CaseFileStore:
     """Append-only store. ID assignment lives here to avoid fan-out races."""
 
-    def __init__(self, path: Path = CASE_FILES_PATH):
-        self.path = path
+    def __init__(self, path: Path | None = None):
+        self.path = path if path is not None else CASE_FILES_PATH
 
     def _next_id(self) -> str:
         records = _read_lines(self.path)
@@ -135,8 +135,8 @@ class CaseFileStore:
 
 
 class TicketStore:
-    def __init__(self, path: Path = TICKETS_PATH):
-        self.path = path
+    def __init__(self, path: Path | None = None):
+        self.path = path if path is not None else TICKETS_PATH
 
     def _next_id(self) -> str:
         records = _read_lines(self.path)

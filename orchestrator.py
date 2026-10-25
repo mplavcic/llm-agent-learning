@@ -1,8 +1,18 @@
+import uuid
+
 from agent import Agent
 from config import MAX_TOKENS, MODEL
 from conversation import Conversation
 from delegate_tool import DELEGATE_SCHEMA, make_dispatcher
+from hooks import (
+    HookContext,
+    HookRegistry,
+    build_default_registry,
+    hooked,
+    utc_now,
+)
 from specialists import REGISTRY as SPECIALIST_REGISTRY
+from users import tier_for
 
 ORCHESTRATOR_MODEL = MODEL
 
@@ -56,16 +66,36 @@ class Orchestrator(Conversation):
         max_tokens: int = MAX_TOKENS,
         registry: dict | None = None,
         system: str | None = None,
+        hooks: HookRegistry | None = None,
+        context: HookContext | None = None,
     ):
         self.registry = registry if registry is not None else SPECIALIST_REGISTRY
         self.human_queue: list = []
         self.verdicts: list[str] = []
+        self.hooks = hooks if hooks is not None else build_default_registry()
+        self.context = context if context is not None else HookContext(
+            user_id=user_id,
+            tier=tier_for(user_id),
+            session_id=uuid.uuid4().hex,
+        )
+        self.started_at = utc_now()
+        self._ended = False
+        self.last_summary: dict | None = None
+
+        execute = make_dispatcher(
+            user_id,
+            on_result=self._observe,
+            registry=self.registry,
+            hooks=self.hooks,
+            context=self.context,
+        )
+        # Delegation is a tool call too: routing is gated and audited by the
+        # same hook layer as every specialist's inner tools.
+        execute = hooked(execute, self.hooks, self.context)
         agent = Agent(
             system=system if system is not None else build_system_prompt(self.registry),
             tools=[DELEGATE_SCHEMA],
-            execute=make_dispatcher(
-                user_id, on_result=self._observe, registry=self.registry
-            ),
+            execute=execute,
             model=model,
             max_tokens=max_tokens,
         )
@@ -75,3 +105,24 @@ class Orchestrator(Conversation):
         self.verdicts.append(result.verdict)
         if result.verdict == "needs_human_review":
             self.human_queue.append(result)
+
+    def end(self) -> dict:
+        """Run Stop hooks once and return the session summary."""
+        if self._ended and self.last_summary is not None:
+            return self.last_summary
+        self._ended = True
+        summary = {
+            "session_id": self.context.session_id,
+            "user_id": self.context.user_id,
+            "tier": self.context.tier,
+            "turns": self.turn_count,
+            "tool_calls": self.hooks.tool_calls,
+            "denials": self.hooks.denials,
+            "verdicts": list(self.verdicts),
+            "human_queue_size": len(self.human_queue),
+            "started_at": self.started_at,
+            "ended_at": utc_now(),
+        }
+        self.last_summary = summary
+        self.hooks.run_stop(summary)
+        return summary

@@ -24,7 +24,7 @@ class StubSpecialist:
         self.result = result if result is not None else make_result()
         self.calls: list[tuple[str, str | None]] = []
 
-    def run(self, query, user_id=None):
+    def run(self, query, user_id=None, *, hooks=None, context=None):
         self.calls.append((query, user_id))
         return self.result
 

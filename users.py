@@ -48,6 +48,12 @@ def lookup_user(user_id: str) -> dict:
     return USER_DB.get(user_id, {"error": "user_not_found", "user_id": user_id})
 
 
+def tier_for(user_id: str | None, default: str = "free") -> str:
+    if not user_id:
+        return default
+    return USER_DB.get(user_id, {}).get("tier", default)
+
+
 def get_purchases(user_id: str) -> dict:
     if user_id not in USER_DB:
         return {"error": "user_not_found", "user_id": user_id}
